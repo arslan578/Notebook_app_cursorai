@@ -1,0 +1,23 @@
+.note {
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+}
+
+.note h3 {
+  margin: 0 0 10px;
+}
+
+.note p {
+  margin: 0 0 15px;
+}
+
+.note button {
+  padding: 5px 10px;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
