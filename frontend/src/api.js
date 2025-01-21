@@ -36,5 +36,10 @@ export const notesAPI = {
   update: (id, noteData) => api.put(`/api/notes/${id}/`, noteData),
 };
 
+export const userAPI = {
+  getProfile: () => api.get("/api/user/profile/"),
+  updateProfile: (userData) => api.patch("/api/user/profile/", userData),
+  changePassword: (passwordData) => api.post("/api/user/change-password/", passwordData),
+};
 
 export default api;

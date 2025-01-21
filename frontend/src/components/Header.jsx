@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { authAPI } from "../api";
 import { ACCESS_TOKEN, REFRESH_TOKEN } from "../constants";
 import "../styles/Header.css";
@@ -22,9 +22,13 @@ function Header() {
     return (
         <header className="header">
             <h1>Notes App</h1>
-            <button onClick={handleLogout} className="logout-btn">
-                Logout
-            </button>
+            <nav>
+                <Link to="/" className="nav-link">Home</Link>
+                <Link to="/profile" className="nav-link">Profile</Link>
+                <button onClick={handleLogout} className="logout-btn">
+                    Logout
+                </button>
+            </nav>
         </header>
     );
 }
