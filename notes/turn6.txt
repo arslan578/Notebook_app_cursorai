@@ -1,0 +1,164 @@
+Let's create the missing dashboard pages. We need to create three new files:
+
+1. First, create DashboardUsers page:
+
+```jsx:frontend/src/pages/DashboardUsers.jsx
+import { useState, useEffect } from 'react';
+import { 
+    Container, Paper, Typography, Table, 
+    TableBody, TableCell, TableContainer, TableHead, 
+    TableRow, TablePagination, TextField, Box 
+} from '@mui/material';
+import { format } from 'date-fns';
+import { ACCESS_TOKEN } from '../constants';
+
+const API_BASE_URL = 'http://localhost:8000/api';
+
+const DashboardUsers = () => {
+    const [users, setUsers] = useState([]);
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(10);
+    const [searchTerm, setSearchTerm] = useState('');
+
+    useEffect(() => {
+        const fetchUsers = async () => {
+            try {
+                const token = localStorage.getItem(ACCESS_TOKEN);
+                const headers = {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                };
+
+                const response = await fetch(`${API_BASE_URL}/dashboard/users/`, { headers });
+                const data = await response.json();
+                setUsers(data);
+            } catch (error) {
+                console.error('Error fetching users:', error);
+            }
+        };
+
+        fetchUsers();
+    }, []);
+
+    const filteredUsers = users.filter(user => 
+        user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    return (
+        <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+            <Paper sx={{ p: 2 }}>
+                <Typography variant="h6" gutterBottom>
+                    Users Management
+                </Typography>
+                <Box sx={{ mb: 2 }}>
+                    <TextField
+                        label="Search Users"
+                        variant="outlined"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        fullWidth
+                    />
+                </Box>
+                <TableContainer>
+                    <Table>
+                        <TableHead>
+                            <TableRow>
+                                <TableCell>Username</TableCell>
+                                <TableCell>Email</TableCell>
+                                <TableCell align="right">Total Notes</TableCell>
+                                <TableCell>Last Note Created</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {filteredUsers
+                                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                                .map((user) => (
+                                    <TableRow key={user.id}>
+                                        <TableCell>{user.username}</TableCell>
+                                        <TableCell>{user.email}</TableCell>
+                                        <TableCell align="right">{user.total_notes}</TableCell>
+                                        <TableCell>
+                                            {user.last_note_date ? 
+                                                format(new Date(user.last_note_date), 'MM/dd/yyyy HH:mm') : 
+                                                'No notes'}
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
+                <TablePagination
+                    rowsPerPageOptions={[5, 10, 25]}
+                    component="div"
+                    count={filteredUsers.length}
+                    rowsPerPage={rowsPerPage}
+                    page={page}
+                    onPageChange={(e, newPage) => setPage(newPage)}
+                    onRowsPerPageChange={(e) => {
+                        setRowsPerPage(parseInt(e.target.value, 10));
+                        setPage(0);
+                    }}
+                />
+            </Paper>
+        </Container>
+    );
+};
+
+export default DashboardUsers;
+```
+
+2. Create DashboardNotes page:
+
+```jsx:frontend/src/pages/DashboardNotes.jsx
+import { Container, Paper, Typography } from '@mui/material';
+
+const DashboardNotes = () => {
+    return (
+        <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+            <Paper sx={{ p: 2 }}>
+                <Typography variant="h6" gutterBottom>
+                    Notes Management
+                </Typography>
+                <Typography>
+                    Notes management features coming soon...
+                </Typography>
+            </Paper>
+        </Container>
+    );
+};
+
+export default DashboardNotes;
+```
+
+3. Create DashboardAnalytics page:
+
+```jsx:frontend/src/pages/DashboardAnalytics.jsx
+import { Container, Paper, Typography } from '@mui/material';
+
+const DashboardAnalytics = () => {
+    return (
+        <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+            <Paper sx={{ p: 2 }}>
+                <Typography variant="h6" gutterBottom>
+                    Analytics Dashboard
+                </Typography>
+                <Typography>
+                    Advanced analytics features coming soon...
+                </Typography>
+            </Paper>
+        </Container>
+    );
+};
+
+export default DashboardAnalytics;
+```
+
+These new components will:
+1. DashboardUsers: Show a detailed view of all users with search and pagination
+2. DashboardNotes: Placeholder for notes management features
+3. DashboardAnalytics: Placeholder for future analytics features
+
+Each of these pages will be accessible through the sidebar navigation we created earlier. The error should be resolved once these files are created since the imports in App.jsx will now have their corresponding files.
+
+Make sure to create these files in the `frontend/src/pages/` directory. After creating these files, the application should work without the import errors.

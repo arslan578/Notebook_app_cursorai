@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
 from .models import Note
+from django.db.models import Count
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -44,3 +45,23 @@ class UserSerializer(serializers.ModelSerializer):
         validated_data.pop('confirm_password')  # Remove confirm_password before creating user
         user = User.objects.create_user(**validated_data)
         return user
+
+
+class UserStatsSerializer(serializers.ModelSerializer):
+    total_notes = serializers.IntegerField()
+    last_note_date = serializers.DateTimeField()
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 
+                 'date_joined', 'total_notes', 'last_note_date']
+
+
+class DailyNotesSerializer(serializers.Serializer):
+    date = serializers.DateField()
+    count = serializers.IntegerField()
+
+
+class NotesPerUserSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    count = serializers.IntegerField()

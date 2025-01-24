@@ -1,0 +1,57 @@
+The error is in the `notes_per_user` view and serializer. The field name in the serializer doesn't match the query. Let's fix both the serializer and view:
+
+```python:backend/api/serializers.py
+from rest_framework import serializers
+from django.contrib.auth.models import User
+from django.db.models import Count
+from .models import Note
+
+# ... other serializers ...
+
+class NotesPerUserSerializer(serializers.Serializer):
+    username = serializers.CharField()  # Changed from user__username
+    count = serializers.IntegerField()
+```
+
+And update the view:
+
+```python:backend/api/views.py
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def notes_per_user(request):
+    notes_distribution = Note.objects.values(
+        username=F('author__username')  # Use F() expression to rename the field
+    ).annotate(
+        count=Count('id')
+    ).order_by('-count')
+    
+    serializer = NotesPerUserSerializer(notes_distribution, many=True)
+    return Response(serializer.data)
+```
+
+Add the import at the top of views.py:
+```python
+from django.db.models import F
+```
+
+These changes:
+1. Simplified the serializer field name to match the query output
+2. Used F() expression to rename the field in the query to match the serializer
+3. Maintained the same functionality while fixing the field name mismatch
+
+The error occurred because the serializer was looking for a field named 'user__username' but the query was returning data with a different field name structure. This update aligns the field names between the query and serializer.
+
+After making these changes, the notes per user endpoint should work correctly. The response will include the username and note count for each user in a format like:
+```json
+[
+    {
+        "username": "user1",
+        "count": 25
+    },
+    {
+        "username": "user2",
+        "count": 15
+    }
+    // ...
+]
+```

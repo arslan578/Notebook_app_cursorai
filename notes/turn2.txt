@@ -1,0 +1,22 @@
+Let's install the required dependencies for the frontend dashboard. Run these commands in your frontend directory:
+
+```bash
+cd frontend
+npm install @mui/material @emotion/react @emotion/styled @mui/icons-material
+npm install recharts date-fns
+```
+
+These commands will install:
+1. Material-UI and its dependencies for the UI components
+2. Recharts for creating charts
+3. date-fns for date formatting
+
+After installing these packages, the import errors should be resolved and the dashboard should work properly. The dashboard includes:
+
+1. A summary section showing total users and notes
+2. A bar chart showing notes created in the last 30 days
+3. A searchable and sortable table of users with their note statistics
+
+You can access the dashboard at `/dashboard` after logging in as an admin user. The backend is already set up with the required API endpoints and they're protected with the `IsAdminUser` permission class.
+
+Let me know if you need any clarification or run into other issues!

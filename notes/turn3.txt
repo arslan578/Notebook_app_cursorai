@@ -1,0 +1,89 @@
+The issue is that we need to include the authentication token in the API requests from the frontend. Let's modify the Dashboard component to include the JWT token in the request headers:
+
+```jsx:frontend/src/pages/Dashboard.jsx
+import { useState, useEffect } from 'react';
+import { 
+    Container, Paper, Typography, Grid, Table, 
+    TableBody, TableCell, TableContainer, TableHead, 
+    TableRow, TablePagination, TextField, Box 
+} from '@mui/material';
+import { 
+    BarChart, Bar, XAxis, YAxis, CartesianGrid, 
+    Tooltip, Legend, ResponsiveContainer 
+} from 'recharts';
+import { format } from 'date-fns';
+import { ACCESS_TOKEN } from '../constants';  // Import the token constant
+
+const API_BASE_URL = 'http://localhost:8000/api';
+
+const Dashboard = () => {
+    const [stats, setStats] = useState({ total_users: 0, total_notes: 0 });
+    const [users, setUsers] = useState([]);
+    const [dailyNotes, setDailyNotes] = useState([]);
+    const [notesPerUser, setNotesPerUser] = useState([]);
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(10);
+    const [searchTerm, setSearchTerm] = useState('');
+
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            try {
+                const token = localStorage.getItem(ACCESS_TOKEN);
+                const headers = {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                };
+
+                const [statsRes, usersRes, dailyRes, distRes] = await Promise.all([
+                    fetch(`${API_BASE_URL}/dashboard/stats/`, { headers }),
+                    fetch(`${API_BASE_URL}/dashboard/users/`, { headers }),
+                    fetch(`${API_BASE_URL}/dashboard/notes-per-day/`, { headers }),
+                    fetch(`${API_BASE_URL}/dashboard/notes-per-user/`, { headers })
+                ]);
+
+                const [statsData, usersData, dailyData, distData] = await Promise.all([
+                    statsRes.json(),
+                    usersRes.json(),
+                    dailyRes.json(),
+                    distRes.json()
+                ]);
+
+                setStats(statsData);
+                setUsers(usersData);
+                setDailyNotes(dailyData);
+                setNotesPerUser(distData);
+            } catch (error) {
+                console.error('Error fetching dashboard data:', error);
+            }
+        };
+
+        fetchDashboardData();
+    }, []);
+
+    // ... rest of the component remains the same ...
+};
+
+export default Dashboard;
+```
+
+The key changes are:
+1. Added import for ACCESS_TOKEN constant
+2. Added authorization headers to each fetch request
+3. Included the JWT token from localStorage in the Authorization header
+
+This should resolve the 401 Unauthorized errors since we're now properly authenticating the requests with the JWT token. Make sure you're logged in as an admin user and the token is properly stored in localStorage.
+
+Also, verify that the user has admin privileges in Django. You can check/set this through the Django admin interface or using the Django shell:
+
+```python
+# Using Django shell
+python manage.py shell
+
+from django.contrib.auth.models import User
+user = User.objects.get(username='your_username')
+user.is_staff = True  # Gives access to admin interface
+user.is_superuser = True  # Gives full admin privileges
+user.save()
+```
+
+After making these changes, the dashboard should be able to fetch the data successfully.

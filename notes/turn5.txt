@@ -1,0 +1,206 @@
+I'll help you modify the dashboard to include a line chart for notes per day and add date range controls. Here's how we can implement this:
+
+```jsx:frontend/src/pages/Dashboard.jsx
+import { useState, useEffect } from 'react';
+import { 
+    Container, Paper, Typography, Grid, Table, 
+    TableBody, TableCell, TableContainer, TableHead, 
+    TableRow, TablePagination, TextField, Box,
+    Button, ButtonGroup, FormControl, InputLabel,
+    Select, MenuItem
+} from '@mui/material';
+import { 
+    LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, 
+    Tooltip, Legend, ResponsiveContainer 
+} from 'recharts';
+import { format, subDays } from 'date-fns';
+import { ACCESS_TOKEN } from '../constants';
+
+const API_BASE_URL = 'http://localhost:8000/api';
+
+const RANGE_OPTIONS = [
+    { label: 'Last 7 Days', value: 7 },
+    { label: 'Last 30 Days', value: 30 },
+    { label: 'Last 90 Days', value: 90 }
+];
+
+const Dashboard = () => {
+    const [stats, setStats] = useState({ total_users: 0, total_notes: 0 });
+    const [users, setUsers] = useState([]);
+    const [dailyNotes, setDailyNotes] = useState([]);
+    const [notesPerUser, setNotesPerUser] = useState([]);
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(10);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [dateRange, setDateRange] = useState(30);
+
+    const fetchDailyNotes = async (days) => {
+        try {
+            const token = localStorage.getItem(ACCESS_TOKEN);
+            const headers = {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            };
+
+            const response = await fetch(
+                `${API_BASE_URL}/dashboard/notes-per-day/?days=${days}`,
+                { headers }
+            );
+            const data = await response.json();
+            
+            // Fill in missing dates with zero counts
+            const filledData = [];
+            for (let i = days - 1; i >= 0; i--) {
+                const date = format(subDays(new Date(), i), 'yyyy-MM-dd');
+                const existingData = data.find(d => d.date === date);
+                filledData.push({
+                    date,
+                    count: existingData ? existingData.count : 0
+                });
+            }
+            setDailyNotes(filledData);
+        } catch (error) {
+            console.error('Error fetching daily notes:', error);
+        }
+    };
+
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            try {
+                const token = localStorage.getItem(ACCESS_TOKEN);
+                const headers = {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                };
+
+                const [statsRes, usersRes, distRes] = await Promise.all([
+                    fetch(`${API_BASE_URL}/dashboard/stats/`, { headers }),
+                    fetch(`${API_BASE_URL}/dashboard/users/`, { headers }),
+                    fetch(`${API_BASE_URL}/dashboard/notes-per-user/`, { headers })
+                ]);
+
+                const [statsData, usersData, distData] = await Promise.all([
+                    statsRes.json(),
+                    usersRes.json(),
+                    distRes.json()
+                ]);
+
+                setStats(statsData);
+                setUsers(usersData);
+                setNotesPerUser(distData);
+            } catch (error) {
+                console.error('Error fetching dashboard data:', error);
+            }
+        };
+
+        fetchDashboardData();
+        fetchDailyNotes(dateRange);
+    }, [dateRange]);
+
+    const handleRangeChange = (event) => {
+        setDateRange(event.target.value);
+    };
+
+    // ... existing filtering code ...
+
+    return (
+        <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+            <Grid container spacing={3}>
+                {/* Summary Statistics */}
+                <Grid item xs={12} md={6}>
+                    <Paper sx={{ p: 2 }}>
+                        <Typography variant="h6" gutterBottom>
+                            Summary
+                        </Typography>
+                        <Typography>Total Users: {stats.total_users}</Typography>
+                        <Typography>Total Notes: {stats.total_notes}</Typography>
+                    </Paper>
+                </Grid>
+
+                {/* Notes Created Chart */}
+                <Grid item xs={12}>
+                    <Paper sx={{ p: 2 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                            <Typography variant="h6">
+                                Notes Created
+                            </Typography>
+                            <FormControl sx={{ minWidth: 200 }}>
+                                <InputLabel>Time Range</InputLabel>
+                                <Select
+                                    value={dateRange}
+                                    label="Time Range"
+                                    onChange={handleRangeChange}
+                                >
+                                    {RANGE_OPTIONS.map(option => (
+                                        <MenuItem key={option.value} value={option.value}>
+                                            {option.label}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Box>
+                        <ResponsiveContainer width="100%" height={400}>
+                            <LineChart data={dailyNotes}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis 
+                                    dataKey="date" 
+                                    tickFormatter={(date) => format(new Date(date), 'MM/dd')}
+                                />
+                                <YAxis />
+                                <Tooltip 
+                                    labelFormatter={(date) => format(new Date(date), 'MM/dd/yyyy')}
+                                />
+                                <Legend />
+                                <Line 
+                                    type="monotone" 
+                                    dataKey="count" 
+                                    name="Notes Created"
+                                    stroke="#8884d8" 
+                                    strokeWidth={2}
+                                    dot={false}
+                                />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </Paper>
+                </Grid>
+
+                {/* Existing user table code... */}
+            </Grid>
+        </Container>
+    );
+};
+
+export default Dashboard;
+```
+
+Update the backend view to handle the dynamic date range:
+
+```python:backend/api/views.py
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def notes_per_day(request):
+    days = int(request.GET.get('days', 30))  # Get days from query params, default to 30
+    start_date = timezone.now() - timedelta(days=days)
+    
+    daily_notes = Note.objects.filter(
+        created_at__gte=start_date
+    ).annotate(
+        date=TruncDate('created_at')
+    ).values('date').annotate(
+        count=Count('id')
+    ).order_by('date')
+    
+    serializer = DailyNotesSerializer(daily_notes, many=True)
+    return Response(serializer.data)
+```
+
+Key features added:
+1. Line chart showing notes created over time
+2. Dropdown to select different time ranges (7, 30, or 90 days)
+3. Proper date formatting on axis and tooltips
+4. Zero-count filling for dates with no notes
+5. Responsive chart that adjusts to container size
+6. Backend support for dynamic date ranges
+7. Smooth animations and interactions
+
+The chart will now show a line representing the number of notes created each day, with the ability to change the time range using the dropdown menu. The data points are connected smoothly, and hovering over the line will show the exact count for each day.
