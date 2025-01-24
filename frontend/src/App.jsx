@@ -4,6 +4,10 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";  // Add this import
 import Profile from "./pages/Profile";  // Add this import
 import ProtectedRoute from "./components/ProtectedRoute";
+import Dashboard from './pages/Dashboard';
+import DashboardUsers from './pages/DashboardUsers';
+import DashboardNotes from './pages/DashboardNotes';
+import DashboardAnalytics from './pages/DashboardAnalytics';
 
 function App() {
     return (
@@ -27,6 +31,16 @@ function App() {
                         </ProtectedRoute>
                     }
                 />
+                <Route path="/dashboard/*" element={
+                    <ProtectedRoute>
+                        <Routes>
+                            <Route index element={<Dashboard />} />
+                            <Route path="users" element={<DashboardUsers />} />
+                            <Route path="notes" element={<DashboardNotes />} />
+                            <Route path="analytics" element={<DashboardAnalytics />} />
+                        </Routes>
+                    </ProtectedRoute>
+                } />
             </Routes>
         </BrowserRouter>
     );
